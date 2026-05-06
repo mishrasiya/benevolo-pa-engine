@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String
+  role           String         @default("PROVIDER")
+  hashedPassword String
+  createdAt      DateTime       @default(now())
+  paRequests     PARequest[]
+  notes          ProviderNote[]
+}
+
+model PARequest {
+  id                   String         @id @default(cuid())
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  patientName          String
+  patientDOB           String
+  patientMemberId      String
+  diagnosisCodes       String
+  procedureCode        String
+  procedureDescription String
+  payer                String
+  urgency              String         @default("ROUTINE")
+  clinicalNotes        String
+  documentationUrl     String?
+  status               String         @default("DRAFT")
+  aiVerdict            String?
+  aiConfidence         Float?
+  aiRationale          String?
+  aiDocGaps            String?
+  aiSuggestedCodes     String?
+  turnaroundEstimate   String?
+  appealStrength       String?
+  aiSummary            String?
+  providerId           String
+  provider             User           @relation(fields: [providerId], references: [id])
+  auditLog             AuditEntry[]
+  notes                ProviderNote[]
+}
+
+model AuditEntry {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  paRequestId String
+  paRequest   PARequest @relation(fields: [paRequestId], references: [id])
+  action      String
+  performedBy String
+  details     String?
+}
+
+model ProviderNote {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  paRequestId String
+  paRequest   PARequest @relation(fields: [paRequestId], references: [id])
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  content     String
+}
