@@ -1,17 +1,17 @@
 # PA Automation Engine
 
-AI-powered Prior Authorization management platform for Medicare and Medicaid.
+An AI-powered Prior Authorization management platform for Medicare and Medicaid. Built to streamline PA intake, clinical review, and appeals using Claude as the clinical reasoning engine.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- **AI**: Anthropic Claude API (claude-sonnet-4-6) for clinical reasoning
-- **Database**: SQLite via Prisma (schema-ready for PostgreSQL)
-- **Auth**: NextAuth.js (credentials provider)
-- **Charts**: Recharts
-- **PDF**: pdf-parse
-
----
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| AI | Anthropic Claude (`claude-sonnet-4-6`) |
+| Database | SQLite via Prisma (schema-ready for PostgreSQL) |
+| Auth | NextAuth.js (credentials provider) |
+| Charts | Recharts |
+| PDF | pdf-parse |
 
 ## Quick Start
 
@@ -23,33 +23,36 @@ npm install
 
 ### 2. Configure environment variables
 
-Copy `.env.example` to `.env.local` and fill in:
+Copy `.env.example` to `.env.local` and fill in the required values:
 
-```
-ANTHROPIC_API_KEY=sk-ant-...      # Required for AI analysis
-NEXTAUTH_SECRET=...               # Any random string (min 32 chars)
+```env
+ANTHROPIC_API_KEY=sk-ant-...        # Required for AI analysis
+NEXTAUTH_SECRET=...                  # Random string, min 32 chars
 NEXTAUTH_URL=http://localhost:3000
 DATABASE_URL="file:./dev.db"
 ```
 
-Generate a secret:
+Generate a secret with:
+
 ```bash
 openssl rand -base64 32
 ```
 
-### 3. Initialize and migrate the database
+### 3. Initialize the database
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-### 4. Seed with 20 realistic PA requests
+### 4. Seed with demo data
+
+Seeds the database with 20 realistic PA requests and two demo user accounts.
 
 ```bash
 npx prisma db seed
 ```
 
-### 5. Start the development server
+### 5. Start the dev server
 
 ```bash
 npm run dev
@@ -57,72 +60,68 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
----
+## Demo Credentials
 
-## Login Credentials
-
-| Role     | Email                 | Password |
-|----------|-----------------------|----------|
-| Provider | provider@demo.com     | demo     |
-| Admin    | admin@demo.com        | demo     |
-
----
+| Role | Email | Password |
+|---|---|---|
+| Provider | provider@demo.com | demo |
+| Admin | admin@demo.com | demo |
 
 ## Features
 
-### PA Intake Form (`/pa/new`)
-- Patient demographics, ICD-10/CPT code search with autocomplete
+### PA Intake Form — `/pa/new`
+- Patient demographics with ICD-10/CPT code autocomplete
 - Payer (Medicare/Medicaid) and urgency selection
-- Clinical notes + optional PDF upload
-- Auto-triggers AI analysis on submission
+- Clinical notes and optional PDF upload
+- AI analysis is triggered automatically on submission
 
 ### AI Clinical Reviewer
-Claude analyzes each PA request against CMS LCD/NCD guidelines and returns:
-- **Verdict**: LIKELY_APPROVED / LIKELY_DENIED / NEEDS_MORE_INFO
-- **Confidence score** (0–100%)
-- **Clinical rationale** bullets citing guideline logic
-- **Documentation gaps** with specific action items
-- **Suggested ICD-10 codes** to strengthen the case
-- **Turnaround estimate** for this payer/procedure type
+Claude analyzes each request against CMS LCD/NCD guidelines and returns:
+
+- **Verdict** — `LIKELY_APPROVED`, `LIKELY_DENIED`, or `NEEDS_MORE_INFO`
+- **Confidence score** — 0–100%
+- **Clinical rationale** — guideline-cited reasoning bullets
+- **Documentation gaps** — specific action items to close gaps
+- **Suggested ICD-10 codes** — to strengthen the authorization case
+- **Turnaround estimate** — based on payer and procedure type
 - **Appeal strength** assessment
 
-### Dashboard (`/dashboard`)
-- Filterable table: status, payer, urgency, date range, text search
+### Dashboard — `/dashboard`
 - Metric cards: Total, Approved, Denied, Pending, Approval Rate, Avg Confidence
-- Sortable columns, click-through to detail view
+- Filterable and sortable PA table by status, payer, urgency, date range, and text
+- Click-through to full detail view
 
-### PA Detail View (`/pa/[id]`)
-- Full patient and request info
+### PA Detail View — `/pa/[id]`
+- Full patient and request information
 - AI Analysis panel with confidence meter and verdict badge
 - Audit timeline of all status changes
 - Provider notes thread
-- Action buttons: Analyze, Mark Approved/Denied, Submit to Payer, Appeal
+- Actions: Analyze, Mark Approved/Denied, Submit to Payer, Appeal
 
 ### Appeal Assistant
-- Triggered from denied PA detail view
-- Select or enter denial reason
+- Triggered from any denied PA
+- Select or enter the denial reason
 - Claude generates a CMS-formatted appeal letter
-- Copy to clipboard or download as .txt
+- Copy to clipboard or download as `.txt`
 
-### Analytics (`/analytics`)
+### Analytics — `/analytics`
 - PA volume by week (bar chart)
-- Status breakdown pie chart
-- Top denied procedures (horizontal bar)
+- Status breakdown (pie chart)
+- Top denied procedures (horizontal bar chart)
 - AI confidence trend over time (line chart)
 
----
-
-## Database Commands
+## Database
 
 ```bash
-npx prisma studio          # GUI to browse database
-npx prisma migrate reset   # Reset and re-seed (loses all data)
-npx prisma db push         # Push schema without migrations
+npx prisma studio          # Browse the database in a GUI
+npx prisma migrate reset   # Reset and re-seed (destructive)
+npx prisma db push         # Push schema changes without a migration
 ```
 
-## Swap to PostgreSQL
+### Switching to PostgreSQL
 
-Change `schema.prisma`:
+Update `prisma/schema.prisma`:
+
 ```prisma
 datasource db {
   provider = "postgresql"
@@ -130,36 +129,41 @@ datasource db {
 }
 ```
 
-Update `DATABASE_URL` in `.env.local` to your PostgreSQL connection string, then run `npx prisma migrate dev`.
+Set `DATABASE_URL` in `.env.local` to your PostgreSQL connection string, then run:
 
----
+```bash
+npx prisma migrate dev
+```
 
 ## Project Structure
 
 ```
 app/
-  dashboard/          Dashboard with PA table + metrics
+  dashboard/          PA table with metrics and filters
   pa/new/             PA intake form
   pa/[id]/            PA detail view
-  analytics/          Charts and metrics page
+  analytics/          Charts and aggregate metrics
   api/
-    pa/               CRUD routes
+    pa/               CRUD routes for PA requests
     pa/[id]/analyze   AI analysis trigger
     pa/[id]/appeal    Appeal letter generation
     pa/[id]/notes     Provider notes
     analytics/        Analytics aggregation
     auth/             NextAuth handler
+
 components/
   layout/             Sidebar, AppLayout
   pa/                 PAForm, PATable, AIPanel, AppealModal
   ui/                 StatusBadge, ConfidenceMeter
   charts/             Recharts wrappers
+
 lib/
-  anthropic.ts        Claude API client + prompts
+  anthropic.ts        Claude API client and prompts
   prisma.ts           Prisma singleton
   auth.ts             NextAuth config
   icd10.ts            Static ICD-10/CPT code lookup
+
 prisma/
   schema.prisma       Database schema
-  seed.ts             20 realistic seed PA requests
+  seed.ts             Demo PA requests and users
 ```
